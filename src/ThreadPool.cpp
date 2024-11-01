@@ -47,13 +47,11 @@ void ThreadPool::enqueue(std::function<void()> task) {
 }
 
 // 处理单张图片的函数
-void process_image(const std::string& model_path, const std::filesystem::path& image_path, const std::string& output_folder,
+void process_image(const std::string& model_path, cv::Mat image, const std::string& output_path,
                    const bool& is_debug, float confidence_threshold, float NMS_threshold) {
 
-    cv::Mat image = cv::imread(image_path.string());
-
     if (image.empty()) {
-        std::cerr << "ERROR: Could not load image " << image_path << std::endl;
+        std::cerr << "ERROR: Could not load image " << output_path << std::endl;
         return;
     }
 
@@ -66,12 +64,9 @@ void process_image(const std::string& model_path, const std::filesystem::path& i
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
 
-    std::cout << "Processed " << image_path.filename() << " in " << duration.count() << " seconds" << std::endl;
-
-    std::string output_path = output_folder + "/" + image_path.filename().string();
+    std::cout << "Processed " << output_path << " in " << duration.count() << " seconds" << std::endl;
 
     if (is_debug)
         cv::imwrite(output_path, image);
 
 }
-
