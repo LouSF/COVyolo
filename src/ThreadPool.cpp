@@ -48,7 +48,8 @@ void ThreadPool::enqueue(std::function<void()> task) {
 
 // 处理单张图片的函数
 void process_image(const std::string& model_path, const std::filesystem::path& image_path, const std::string& output_folder,
-                   bool is_debug, float confidence_threshold, float NMS_threshold) {
+                   const bool& is_debug, float confidence_threshold, float NMS_threshold) {
+
     cv::Mat image = cv::imread(image_path.string());
 
     if (image.empty()) {
@@ -59,13 +60,18 @@ void process_image(const std::string& model_path, const std::filesystem::path& i
     openVION_YOLO::Inference inference(model_path, cv::Size(640, 640), confidence_threshold, NMS_threshold);
 
     auto start = std::chrono::high_resolution_clock::now();
-    inference.RunInference(image);
+
+    inference.RunInference(image, is_debug);
+
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
 
     std::cout << "Processed " << image_path.filename() << " in " << duration.count() << " seconds" << std::endl;
 
     std::string output_path = output_folder + "/" + image_path.filename().string();
-    cv::imwrite(output_path, image);
+
+    if (is_debug)
+        cv::imwrite(output_path, image);
+
 }
 

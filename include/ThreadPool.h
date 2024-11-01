@@ -33,7 +33,7 @@ private:
 };
 
 void process_image(const std::string& model_path, const std::filesystem::path& image_path, const std::string& output_folder,
-                   bool is_debug, float confidence_threshold, float NMS_threshold);
+                   const bool& is_debug, float confidence_threshold, float NMS_threshold);
 
 
 #endif //COVYOLO_THREADPOOL_H

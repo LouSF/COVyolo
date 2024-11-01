@@ -27,14 +27,16 @@ namespace openVION_YOLO {
         // Constructor to initialize the model with specified input shape
         Inference(const std::string &model_path, const cv::Size model_input_shape, const float &model_confidence_threshold, const float &model_NMS_threshold);
 
-        void SaveDetectionsAsVOCXML(const std::string &output_dir, const std::string &filename, const cv::Size &image_size, const std::vector<Detection> &detections);
+        void SaveDetectionsAsVOCXML(const std::vector<int>& NMS_result, const std::vector<int>& class_list,
+                                               const std::vector<float>& confidence_list, const std::vector<cv::Rect>& box_list,
+                                               cv::Mat& frame);
 
-        void RunInference(cv::Mat &frame);
+        void RunInference(cv::Mat &frame ,const bool& is_debug);
 
     private:
         void InitializeModel(const std::string &model_path);
         void Preprocessing(const cv::Mat &frame);
-        void PostProcessing(cv::Mat &frame);
+        void PostProcessing(cv::Mat &frame, const bool& is_debug);
         cv::Rect GetBoundingBox(const cv::Rect &src) const;
         void DrawDetectedObject(cv::Mat &frame, const Detection &detections) const;
 

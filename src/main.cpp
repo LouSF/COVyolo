@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
         std::string dir;
         std::string model;
         std::string output_file;
-        bool debug = false;
+        bool is_debug = false;
         float debug_IoU = 0.65;
         float debug_Cof = 0.25;
 
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
             } else if (arg == "--out" && i + 1 < argc) {
                 output_file = argv[++i];
             } else if (arg == "--debug") {
-                debug = true;
+                is_debug = true;
             } else if (arg == "--debug_IoU" && i + 1 < argc) {
                 debug_IoU = std::stod(argv[++i]);
             } else if (arg == "--debug_Cof" && i + 1 < argc) {
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
             if (path.extension() == ".jpg" || path.extension() == ".png" || path.extension() == ".jpeg") {
                 pool.enqueue([=] {
-                    process_image(model, path, output_file, debug, debug_Cof, debug_IoU);
+                    process_image(model, path, output_file, is_debug, debug_Cof, debug_IoU);
                 });
             }
         }
