@@ -36,12 +36,12 @@ int main(int argc, char *argv[]) {
             .help("(option)(output marked image) <output_labeled_image_file>(option)");
 
     YOLO_inference.add_argument("--debug_IoU")
-            .default_value(0.0f)
+            .default_value(0.3f)
             .scan<'g', float>()
             .help("<IoU_NMS>(option)");
 
     YOLO_inference.add_argument("--debug_Cof")
-            .default_value(0.0f)
+            .default_value(0.2f)
             .scan<'g', float>()
             .help("<Confidence_NMS>(option)");
 
