@@ -14,88 +14,56 @@
 #include "argparse/argparse.hpp"
 #include "ThreadPool.h"
 
-
-void print_usage() {
-    std::cout << "Usage: ./lsf's bin file \n"
-                 "-d, --dir <directory> \n"
-                 "-m, --model <model>(option) \n"
-                 "-o, --out <output_xml_file> \n"
-                 "Debug Mode: \n"
-                 "--debug(option)(output marked image) <output_labeled_image_file>(option) \n"
-                 "--debug_IoU <IoU_NMS>(option) \n"
-                 "--debug_Cof <Confidence_NMS>(option) \n" << std::endl;
-}
-
-
 int main(int argc, char *argv[]) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    argparse::ArgumentParser YOLO_inference("lsf's OpenVNO based YOLO inference");
+
+    YOLO_inference.add_argument("-d", "--dir")
+            .required()
+            .help("Input Folder");
+
+    YOLO_inference.add_argument("-m", "--model")
+            .default_value(std::string("model/model.xml"))
+            .help("model (option)");
+
+    YOLO_inference.add_argument("-o", "--out")
+            .required()
+            .help("Output Folder");
+
+    YOLO_inference.add_argument("--debug")
+            .default_value(std::string(""))
+            .help("(option)(output marked image) <output_labeled_image_file>(option)");
+
+    YOLO_inference.add_argument("--debug_IoU")
+            .default_value(0.0f)
+            .scan<'g', float>()
+            .help("<IoU_NMS>(option)");
+
+    YOLO_inference.add_argument("--debug_Cof")
+            .default_value(0.0f)
+            .scan<'g', float>()
+            .help("<Confidence_NMS>(option)");
+
     try {
-        auto start = std::chrono::high_resolution_clock::now();
+        YOLO_inference.parse_args(argc, argv);
 
-        argparse::ArgumentParser YOLO_inference("lsf's OpenVNO based YOLO inference");
+        auto dir = YOLO_inference.get<std::string>("--dir");
+        auto model = YOLO_inference.get<std::string>("--model");
+        auto output_folder = YOLO_inference.get<std::string>("--out");
+        auto debug_path = YOLO_inference.get<std::string>("--debug");
+        auto debug_IoU = YOLO_inference.get<float>("--debug_IoU");
+        auto debug_Cof = YOLO_inference.get<float>("--debug_Cof");
 
-        YOLO_inference.add_argument("-d", "--dir")
-                .default_value(std::string("-"))
-                .required()
-                .help("Input Folder");
+        std::filesystem::path dir_path(dir);
+        std::filesystem::path model_path(model);
+        std::filesystem::path output_folder_path(output_folder);
+        std::filesystem::path debug_path_path(debug_path);
 
-        YOLO_inference.add_argument("-m", "--model")
-                .default_value(std::string("-"))
-                .required()
-                .help("model (option)");
+        bool is_debug = !debug_path_path.empty();
 
-        YOLO_inference.add_argument("--debug")
-                .help("(option)(output marked image) <output_labeled_image_file>(option)");
-
-        YOLO_inference.add_argument("--debug_IoU")
-                .help("<IoU_NMS>(option)");
-
-        YOLO_inference.add_argument("--debug_Cof")
-                .help("<Confidence_NMS>(option)");
-
-        try {
-            YOLO_inference.parse_args(argc, argv);    // Example: ./main --color orange
-        }
-        catch (const std::exception& err) {
-            std::cerr << err.what() << std::endl;
-            std::cerr << YOLO_inference;
-            std::exit(1);
-        }
-
-
-        if (argc < 5) {
-            print_usage();
-            throw std::invalid_argument("Incorrect number of arguments.");
-        }
-
-        std::string dir;
-        std::string model;
-        std::string output_folder;
-        bool is_debug = false;
-        float debug_IoU = 0.65;
-        float debug_Cof = 0.25;
-
-        for (int i = 1; i < argc; ++i) {
-            std::string arg = argv[i];
-            if (arg == "--dir" && i + 1 < argc) {
-                dir = argv[++i];
-            } else if (arg == "--model" && i + 1 < argc) {
-                model = argv[++i];
-            } else if (arg == "--out" && i + 1 < argc) {
-                output_folder = argv[++i];
-            } else if (arg == "--debug") {
-                is_debug = true;
-            } else if (arg == "--debug_IoU" && i + 1 < argc) {
-                debug_IoU = std::stof(argv[++i]);
-            } else if (arg == "--debug_Cof" && i + 1 < argc) {
-                debug_Cof = std::stof(argv[++i]);
-            } else {
-                print_usage();
-                throw std::invalid_argument("Unknown or incomplete argument: " + arg);
-            }
-        }
-
-        if (!std::filesystem::exists(output_folder)) {
-            std::filesystem::create_directories(output_folder);
+        if (!std::filesystem::exists(output_folder_path)) {
+            std::filesystem::create_directories(output_folder_path);
         }
 
         size_t numThreads = std::thread::hardware_concurrency();
@@ -108,7 +76,7 @@ int main(int argc, char *argv[]) {
 
         // Producer thread
         std::thread producer([&] {
-            for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+            for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
                 const auto& path = entry.path();
 
                 if (path.extension() == ".jpg" || path.extension() == ".png" || path.extension() == ".jpeg") {
@@ -144,8 +112,8 @@ int main(int argc, char *argv[]) {
                         imageQueue.pop();
                     }
 
-                    process_image(model, item.second,
-                                  dir, output_folder, "example/labeled_image",
+                    process_image(model_path, item.second,
+                                  dir_path, output_folder_path, debug_path_path,
                                   item.first.filename(),
                                   is_debug, debug_Cof, debug_IoU);
                 }
@@ -161,9 +129,11 @@ int main(int argc, char *argv[]) {
         std::chrono::duration<double> duration = end - start;
         std::cout << "All Processed in " << duration.count() << " seconds" << std::endl;
 
-    } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
+    }
+    catch (const std::exception& err) {
+        std::cerr << err.what() << std::endl;
+        std::cerr << YOLO_inference;
+        std::exit(1);
     }
 
     return 0;
