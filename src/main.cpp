@@ -6,14 +6,11 @@
 #include <string>
 #include <stdexcept>
 #include <opencv2/highgui.hpp>
-#include <chrono>
 #include <filesystem>
 #include <thread>
-#include <vector>
 #include <queue>
 #include <mutex>
-#include <condition_variable>
-#include <functional>
+
 
 
 #include "ThreadPool.h"
@@ -121,6 +118,8 @@ int main(int argc, char *argv[]) {
         }
 
         producer.join();
+
+        pool.~ThreadPool();
 
         auto end = std::chrono::high_resolution_clock::now();
 
