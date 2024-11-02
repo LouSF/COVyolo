@@ -55,15 +55,18 @@ int main(int argc, char *argv[]) {
         auto debug_IoU = YOLO_inference.get<float>("--debug_IoU");
         auto debug_Cof = YOLO_inference.get<float>("--debug_Cof");
 
-        std::filesystem::path dir_path(dir);
-        std::filesystem::path model_path(model);
-        std::filesystem::path output_folder_path(output_folder);
-        std::filesystem::path debug_path_path(debug_path);
+        const std::filesystem::path dir_path(dir);
+        const std::filesystem::path model_path(model);
+        const std::filesystem::path output_folder_path(output_folder);
+        const std::filesystem::path debug_img_path(debug_path);
 
-        bool is_debug = !debug_path_path.empty();
+        const bool is_debug = !debug_img_path.empty();
 
         if (!std::filesystem::exists(output_folder_path)) {
             std::filesystem::create_directories(output_folder_path);
+        }
+        if (!std::filesystem::exists(debug_img_path)) {
+            std::filesystem::create_directories(debug_img_path);
         }
 
         size_t numThreads = std::thread::hardware_concurrency();
@@ -113,7 +116,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     process_image(model_path, item.second,
-                                  dir_path, output_folder_path, debug_path_path,
+                                  dir_path, output_folder_path, debug_img_path,
                                   item.first.filename(),
                                   is_debug, debug_Cof, debug_IoU);
                 }
