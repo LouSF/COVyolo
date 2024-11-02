@@ -11,7 +11,9 @@
 #include <queue>
 #include <mutex>
 
+//#include "argparse/argparse.hpp"
 #include "ThreadPool.h"
+
 
 void print_usage() {
     std::cout << "Usage: ./lsf's bin file \n"
@@ -111,8 +113,9 @@ int main(int argc, char *argv[]) {
                         imageQueue.pop();
                     }
 
-                    const std::string output_path = output_folder + "/" + item.first.filename().string();
-                    process_image(model, item.second, output_path, is_debug, debug_Cof, debug_IoU);
+                    process_image(model, item.second,
+                                  dir, output_folder, item.first.filename(),
+                                  is_debug, debug_Cof, debug_IoU);
                 }
             });
         }

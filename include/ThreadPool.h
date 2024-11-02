@@ -32,7 +32,8 @@ private:
     bool stop;
 };
 
-void process_image(const std::string& model_path, cv::Mat image, const std::string& output_path,
+void process_image(const std::filesystem::path& model_path, cv::Mat image,
+                   const std::filesystem::path& input_folder, const std::filesystem::path& output_folder, const std::filesystem::path& output_file_name,
                    const bool& is_debug, float confidence_threshold, float NMS_threshold);
 
 

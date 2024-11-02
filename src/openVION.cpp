@@ -65,10 +65,10 @@ namespace openVION_YOLO {
     }
 
 // Method to run inference on an input frame
-    void Inference::RunInference(cv::Mat &frame, const bool& is_debug) {
+    Image_Detection_xml Inference::RunInference(cv::Mat &frame, const bool& is_debug) {
         Preprocessing(frame); // Preprocess the input frame
         inference_request_.infer(); // Run inference
-        PostProcessing(frame, is_debug); // Postprocess the inference results
+        return PostProcessing(frame, is_debug); // Postprocess the inference results
     }
 
 // Method to preprocess the input frame
@@ -86,7 +86,7 @@ namespace openVION_YOLO {
     }
 
 // Method to postprocess the inference results
-    void Inference::PostProcessing(cv::Mat &frame, const bool& is_debug) {
+    Image_Detection_xml Inference::PostProcessing(cv::Mat &frame, const bool& is_debug) {
         std::vector<int> class_list;
         std::vector<float> confidence_list;
         std::vector<cv::Rect> box_list;
@@ -126,6 +126,8 @@ namespace openVION_YOLO {
         std::vector<int> NMS_result;
         cv::dnn::NMSBoxes(box_list, confidence_list, model_confidence_threshold_, model_NMS_threshold_, NMS_result);
 
+        Image_Detection_xml all_result;
+
         // Collect final detections after NMS
         for (int i = 0; i < NMS_result.size(); ++i) {
             Detection result;
@@ -135,9 +137,16 @@ namespace openVION_YOLO {
             result.confidence = confidence_list[id];
             result.box = GetBoundingBox(box_list[id]);
 
+            all_result.detection.emplace_back(result);
+
             if(is_debug)
                 DrawDetectedObject(frame, result);
         }
+
+        all_result.image_size_x = frame.cols;
+        all_result.image_size_y = frame.rows;
+
+        return all_result;
     }
 
 // Method to get the bounding box in the correct scale
@@ -178,120 +187,97 @@ namespace openVION_YOLO {
         cv::putText(frame, classString, cv::Point(box.x + 5, box.y - 10), cv::FONT_HERSHEY_DUPLEX, 0.75, cv::Scalar(0, 0, 0), 2, 0);
     }
 
-    void Inference::SaveDetectionsAsVOCXML(const std::vector<int>& NMS_result, const std::vector<int>& class_list,
-                                           const std::vector<float>& confidence_list, const std::vector<cv::Rect>& box_list,
-                                           cv::Mat& frame) {
-        using namespace tinyxml2;
-        using namespace std::filesystem;
-
-        // Create XMLDocument as a local object
-        XMLDocument doc;
-
-        // Create XML declaration
-        XMLDeclaration *decl = doc.NewDeclaration("xml version=\"1.0\" encoding=\"UTF-8\"");
-        doc.LinkEndChild(decl);
+    void Inference::SaveDetectionsAsVOCXML(const Image_Detection_xml& detections_xml, const std::filesystem::path& xml_path, const std::filesystem::path& xml_file_name,
+                                           const std::filesystem::path& img_file_path, const std::filesystem::path& img_file_name) const {
+        tinyxml2::XMLDocument doc;
 
         // Create root element
-        XMLElement *annotation = doc.NewElement("annotation");
-        doc.LinkEndChild(annotation);
+        tinyxml2::XMLElement* annotation = doc.NewElement("annotation");
+        doc.InsertFirstChild(annotation);
 
-        // Add folder and filename elements
-        XMLElement* folder = doc.NewElement("folder");
+        // Add folder element
+        tinyxml2::XMLElement* folder = doc.NewElement("folder");
         folder->SetText("images");
         annotation->InsertEndChild(folder);
 
-        XMLElement* filename = doc.NewElement("filename");
-        filename->SetText("image.jpg");
+        // Add filename element
+        tinyxml2::XMLElement* filename = doc.NewElement("filename");
+        filename->SetText(img_file_name.c_str());
         annotation->InsertEndChild(filename);
 
-        // Add source element
-        XMLElement* source = doc.NewElement("source");
-        annotation->InsertEndChild(source);
+        // Add path element
+        tinyxml2::XMLElement* path = doc.NewElement("path");
+        std::filesystem::path full_path = img_file_path / img_file_name;
+        path->SetText(full_path.c_str());
+        annotation->InsertEndChild(path);
 
-        XMLElement* database = doc.NewElement("database");
+        // Add source element
+        tinyxml2::XMLElement* source = doc.NewElement("source");
+        tinyxml2::XMLElement* database = doc.NewElement("database");
         database->SetText("Unknown");
         source->InsertEndChild(database);
+        annotation->InsertEndChild(source);
 
         // Add size element
-        XMLElement* size = doc.NewElement("size");
-        annotation->InsertEndChild(size);
-
-        XMLElement* width = doc.NewElement("width");
-        width->SetText(frame.cols);
-        size->InsertEndChild(width);
-
-        XMLElement* height = doc.NewElement("height");
-        height->SetText(frame.rows);
-        size->InsertEndChild(height);
-
+        tinyxml2::XMLElement* size = doc.NewElement("size");
+        tinyxml2::XMLElement* width = doc.NewElement("width");
+        width->SetText(detections_xml.image_size_x);
+        tinyxml2::XMLElement* height = doc.NewElement("height");
+        height->SetText(detections_xml.image_size_y);
         tinyxml2::XMLElement* depth = doc.NewElement("depth");
-        depth->SetText(frame.channels());
+        depth->SetText(3);
+        size->InsertEndChild(width);
+        size->InsertEndChild(height);
         size->InsertEndChild(depth);
+        annotation->InsertEndChild(size);
 
         // Add segmented element
         tinyxml2::XMLElement* segmented = doc.NewElement("segmented");
-        segmented->SetText("0");
+        segmented->SetText(0);
         annotation->InsertEndChild(segmented);
 
-        for (int i = 0; i < NMS_result.size(); ++i) {
-            Detection result;
-            const unsigned short id = NMS_result[i];
+        // Add object elements for each detection
+        for (const auto& detection : detections_xml.detection) {
 
-            result.class_id = class_list[id];
-            result.confidence = confidence_list[id];
-            result.box = GetBoundingBox(box_list[id]);
+            tinyxml2::XMLElement* object = doc.NewElement("object");
 
-            XMLElement* object = doc.NewElement("object");
-            annotation->InsertEndChild(object);
-
-            XMLElement* name = doc.NewElement("name");
-            name->SetText(classes_[result.class_id].c_str());
+            tinyxml2::XMLElement* name = doc.NewElement("name");
+            name->SetText(classes_[detection.class_id].c_str());
             object->InsertEndChild(name);
 
-            XMLElement* pose = doc.NewElement("pose");
+            tinyxml2::XMLElement* pose = doc.NewElement("pose");
             pose->SetText("Unspecified");
             object->InsertEndChild(pose);
 
-            XMLElement* truncated = doc.NewElement("truncated");
-            truncated->SetText("0");
+            tinyxml2::XMLElement* truncated = doc.NewElement("truncated");
+            truncated->SetText(0);
             object->InsertEndChild(truncated);
 
-            XMLElement* difficult = doc.NewElement("difficult");
-            difficult->SetText("0");
+            tinyxml2::XMLElement* difficult = doc.NewElement("difficult");
+            difficult->SetText(0);
             object->InsertEndChild(difficult);
 
-            XMLElement* confidence = doc.NewElement("confidence");
-            confidence->SetText(result.confidence);
-            object->InsertEndChild(confidence);
-
-            XMLElement* bndbox = doc.NewElement("bndbox");
+            tinyxml2::XMLElement* bndbox = doc.NewElement("bndbox");
+            tinyxml2::XMLElement* xmin = doc.NewElement("xmin");
+            xmin->SetText(detection.box.x);
+            tinyxml2::XMLElement* ymin = doc.NewElement("ymin");
+            ymin->SetText(detection.box.y);
+            tinyxml2::XMLElement* xmax = doc.NewElement("xmax");
+            xmax->SetText(detection.box.x + detection.box.width);
+            tinyxml2::XMLElement* ymax = doc.NewElement("ymax");
+            ymax->SetText(detection.box.y + detection.box.height);
+            bndbox->InsertEndChild(xmin);
+            bndbox->InsertEndChild(ymin);
+            bndbox->InsertEndChild(xmax);
+            bndbox->InsertEndChild(ymax);
             object->InsertEndChild(bndbox);
 
-            XMLElement* xmin = doc.NewElement("xmin");
-            xmin->SetText(result.box.x);
-            bndbox->InsertEndChild(xmin);
-
-            XMLElement* ymin = doc.NewElement("ymin");
-            ymin->SetText(result.box.y);
-            bndbox->InsertEndChild(ymin);
-
-            XMLElement* xmax = doc.NewElement("xmax");
-            xmax->SetText(result.box.x + result.box.width);
-            bndbox->InsertEndChild(xmax);
-
-            XMLElement* ymax = doc.NewElement("ymax");
-            ymax->SetText(result.box.y + result.box.height);
-            bndbox->InsertEndChild(ymax);
+            annotation->InsertEndChild(object);
         }
-//
-//        // Ensure the output directory exists
-//        create_directories(output_dir);
-//
-//        // Construct the full file path
-//        path file_path = path(output_dir) / filename;
-//
-//        // Save the XML to file
-//        doc.SaveFile(file_path.string().c_str());
+
+        // Save the XML document
+        const auto output_path = xml_path / xml_file_name;
+        doc.SaveFile(output_path.c_str());
     }
 
 

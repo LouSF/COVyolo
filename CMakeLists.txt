@@ -8,9 +8,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS_DEBUG "$ENV{CMAKE_C_FLAGS_DEBUG} -g")
-set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CMAKE_CXX_FLAGS_DEBUG} -g")
+#set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_C_FLAGS_DEBUG "$ENV{CMAKE_C_FLAGS_DEBUG} -g")
+#set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CMAKE_CXX_FLAGS_DEBUG} -g")
 
 # 查找 OpenCV 包
 find_package(OpenCV REQUIRED)
@@ -27,13 +27,18 @@ include_directories(
 )
 
 # 添加 tinyxml2 子目录
-add_subdirectory(lib/tinyxml2)
+add_subdirectory(
+        lib/tinyxml2
+#        lib/argparse
+)
 
 # 查找源文件
 file(GLOB SOURCES "src/*.cpp")
 
 # 添加可执行文件
-add_executable(COVyolo ${SOURCES})
+add_executable(COVyolo
+        ${SOURCES}
+)
 
 # 链接库
 target_link_libraries(COVyolo
@@ -41,6 +46,7 @@ target_link_libraries(COVyolo
         ${OpenVINO_LIBRARIES}
         openvino::runtime
         tinyxml2
+#        argparse
 )
 
 # 设置输出目录

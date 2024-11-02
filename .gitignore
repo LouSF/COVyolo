@@ -86,3 +86,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+example/image/*
+example/labeled_image/*
+example/labels_xml/*
