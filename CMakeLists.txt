@@ -26,6 +26,7 @@ include_directories(
 
 add_subdirectory(
         lib/tinyxml2
+        lib/argparse
 )
 
 file(GLOB SOURCES "src/*.cpp"
