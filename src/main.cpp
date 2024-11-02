@@ -11,10 +11,7 @@
 #include <queue>
 #include <mutex>
 
-
-
 #include "ThreadPool.h"
-
 
 void print_usage() {
     std::cout << "Usage: ./lsf's bin file \n"
@@ -27,9 +24,9 @@ void print_usage() {
                  "--debug_Cof <Confidence_NMS>(option) \n" << std::endl;
 }
 
+
 int main(int argc, char *argv[]) {
     try {
-
         auto start = std::chrono::high_resolution_clock::now();
 
         if (argc < 5) {
@@ -55,9 +52,9 @@ int main(int argc, char *argv[]) {
             } else if (arg == "--debug") {
                 is_debug = true;
             } else if (arg == "--debug_IoU" && i + 1 < argc) {
-                debug_IoU = std::stod(argv[++i]);
+                debug_IoU = std::stof(argv[++i]);
             } else if (arg == "--debug_Cof" && i + 1 < argc) {
-                debug_Cof = std::stod(argv[++i]);
+                debug_Cof = std::stof(argv[++i]);
             } else {
                 print_usage();
                 throw std::invalid_argument("Unknown or incomplete argument: " + arg);
@@ -76,7 +73,6 @@ int main(int argc, char *argv[]) {
         std::condition_variable queueCondition;
         bool doneReading = false;
 
-
         // Producer thread
         std::thread producer([&] {
             for (const auto& entry : std::filesystem::directory_iterator(dir)) {
@@ -91,13 +87,17 @@ int main(int argc, char *argv[]) {
                     queueCondition.notify_one();
                 }
             }
-            doneReading = true;
+            {
+                std::lock_guard<std::mutex> lock(queueMutex);
+                doneReading = true;
+            }
             queueCondition.notify_all();
         });
 
         // Consumer threads
+        std::vector<std::thread> consumers;
         for (size_t i = 0; i < numThreads; ++i) {
-            pool.enqueue([&] {
+            consumers.emplace_back([&] {
                 while (true) {
                     std::pair<std::filesystem::path, cv::Mat> item;
                     {
@@ -118,13 +118,12 @@ int main(int argc, char *argv[]) {
         }
 
         producer.join();
-
-        pool.~ThreadPool();
+        for (auto& consumer : consumers) {
+            consumer.join();
+        }
 
         auto end = std::chrono::high_resolution_clock::now();
-
         std::chrono::duration<double> duration = end - start;
-
         std::cout << "All Processed in " << duration.count() << " seconds" << std::endl;
 
     } catch (const std::exception &e) {
