@@ -18,10 +18,14 @@ find_package(OpenCV REQUIRED)
 # 查找 OpenVINO
 find_package(OpenVINO REQUIRED)
 
+add_library(argparse INTERFACE)
+add_library(argparse::argparse ALIAS argparse)
+
 # 包含头文件目录
 include_directories(
         ${OpenCV_INCLUDE_DIRS}
         ${OpenVINO_INCLUDE_DIRS}
+        lib/argparse/include
         include
         model
 )
@@ -29,7 +33,7 @@ include_directories(
 # 添加 tinyxml2 子目录
 add_subdirectory(
         lib/tinyxml2
-#        lib/argparse
+        lib/argparse
 )
 
 # 查找源文件
@@ -46,7 +50,7 @@ target_link_libraries(COVyolo
         ${OpenVINO_LIBRARIES}
         openvino::runtime
         tinyxml2
-#        argparse
+        argparse
 )
 
 # 设置输出目录

@@ -56,7 +56,8 @@ std::string ChangeFileExtension(const std::string& filename, const std::string& 
 
 // 处理单张图片的函数
 void process_image(const std::filesystem::path& model_path, cv::Mat image,
-                   const std::filesystem::path& input_folder, const std::filesystem::path& output_folder, const std::filesystem::path& output_file_name,
+                   const std::filesystem::path& input_folder, const std::filesystem::path& output_folder_xml, const std::filesystem::path& output_folder_img,
+                   const std::filesystem::path& output_file_name,
                    const bool& is_debug, float confidence_threshold, float NMS_threshold) {
 
     if (image.empty()) {
@@ -71,7 +72,7 @@ void process_image(const std::filesystem::path& model_path, cv::Mat image,
     auto detections = inference.RunInference(image, is_debug);
 
     const auto xml_name = ChangeFileExtension(output_file_name, ".xml");
-    inference.SaveDetectionsAsVOCXML(detections, output_folder, xml_name,
+    inference.SaveDetectionsAsVOCXML(detections, output_folder_xml, xml_name,
                                      input_folder, output_file_name);
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -81,8 +82,8 @@ void process_image(const std::filesystem::path& model_path, cv::Mat image,
 
 
     if (is_debug) {
-        std::cout << "Save marked image " << output_file_name << " in " << output_folder << std::endl;
-        auto output_path = output_folder / output_file_name;
+        std::cout << "Save marked image " << output_file_name << " in " << output_folder_img << std::endl;
+        auto output_path = output_folder_img / output_file_name;
         cv::imwrite(output_path, image);
     }
 

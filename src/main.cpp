@@ -11,17 +11,17 @@
 #include <queue>
 #include <mutex>
 
-//#include "argparse/argparse.hpp"
+#include "argparse/argparse.hpp"
 #include "ThreadPool.h"
 
 
 void print_usage() {
     std::cout << "Usage: ./lsf's bin file \n"
-                 "--dir <directory> \n"
-                 "--model <model>(option) \n"
-                 "--out <output_file> \n"
+                 "-d, --dir <directory> \n"
+                 "-m, --model <model>(option) \n"
+                 "-o, --out <output_xml_file> \n"
                  "Debug Mode: \n"
-                 "--debug(option)(output marked image) \n"
+                 "--debug(option)(output marked image) <output_labeled_image_file>(option) \n"
                  "--debug_IoU <IoU_NMS>(option) \n"
                  "--debug_Cof <Confidence_NMS>(option) \n" << std::endl;
 }
@@ -30,6 +30,37 @@ void print_usage() {
 int main(int argc, char *argv[]) {
     try {
         auto start = std::chrono::high_resolution_clock::now();
+
+        argparse::ArgumentParser YOLO_inference("lsf's OpenVNO based YOLO inference");
+
+        YOLO_inference.add_argument("-d", "--dir")
+                .default_value(std::string("-"))
+                .required()
+                .help("Input Folder");
+
+        YOLO_inference.add_argument("-m", "--model")
+                .default_value(std::string("-"))
+                .required()
+                .help("model (option)");
+
+        YOLO_inference.add_argument("--debug")
+                .help("(option)(output marked image) <output_labeled_image_file>(option)");
+
+        YOLO_inference.add_argument("--debug_IoU")
+                .help("<IoU_NMS>(option)");
+
+        YOLO_inference.add_argument("--debug_Cof")
+                .help("<Confidence_NMS>(option)");
+
+        try {
+            YOLO_inference.parse_args(argc, argv);    // Example: ./main --color orange
+        }
+        catch (const std::exception& err) {
+            std::cerr << err.what() << std::endl;
+            std::cerr << YOLO_inference;
+            std::exit(1);
+        }
+
 
         if (argc < 5) {
             print_usage();
@@ -114,7 +145,8 @@ int main(int argc, char *argv[]) {
                     }
 
                     process_image(model, item.second,
-                                  dir, output_folder, item.first.filename(),
+                                  dir, output_folder, "example/labeled_image",
+                                  item.first.filename(),
                                   is_debug, debug_Cof, debug_IoU);
                 }
             });

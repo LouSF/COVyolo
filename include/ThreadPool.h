@@ -33,7 +33,8 @@ private:
 };
 
 void process_image(const std::filesystem::path& model_path, cv::Mat image,
-                   const std::filesystem::path& input_folder, const std::filesystem::path& output_folder, const std::filesystem::path& output_file_name,
+                   const std::filesystem::path& input_folder, const std::filesystem::path& output_folder_xml, const std::filesystem::path& output_folder_img,
+                   const std::filesystem::path& output_file_name,
                    const bool& is_debug, float confidence_threshold, float NMS_threshold);
 
 
