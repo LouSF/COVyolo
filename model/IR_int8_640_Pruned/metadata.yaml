@@ -1,0 +1,18 @@
+description: Ultralytics YOLO11n model trained on /root/autodl-tmp/combine_dataset_ug/dataset.yaml
+author: Ultralytics
+date: '2024-11-04T19:56:45.633444'
+version: 8.3.24
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: Header
+  1: Text
+  2: Figure
+  3: Title
+  4: Foot
