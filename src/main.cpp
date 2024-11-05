@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
         if (!std::filesystem::exists(output_folder_path)) {
             std::filesystem::create_directories(output_folder_path);
         }
-        if (!std::filesystem::exists(debug_img_path)) {
+        if (is_debug && !std::filesystem::exists(debug_img_path)) {
             std::filesystem::create_directories(debug_img_path);
         }
 

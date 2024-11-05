@@ -12,10 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(OpenCV REQUIRED)
 find_package(OpenVINO REQUIRED)
+find_package(Threads REQUIRED)
 
 add_library(argparse INTERFACE)
 add_library(argparse::argparse ALIAS argparse)
-
+#message(${OpenCV_INCLUDE_DIRS})
 include_directories(
         ${OpenCV_INCLUDE_DIRS}
         ${OpenVINO_INCLUDE_DIRS}
