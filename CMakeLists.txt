@@ -40,6 +40,7 @@ add_executable(COVyolo
 target_link_libraries(COVyolo
         ${OpenCV_LIBS}
         ${OpenVINO_LIBRARIES}
+        ${CMAKE_THREAD_LIBS_INIT}
         openvino::runtime
         tinyxml2
 )

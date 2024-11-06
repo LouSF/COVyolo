@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
             .help("Input Folder");
 
     YOLO_inference.add_argument("-m", "--model")
-            .default_value(std::string("model/model.xml"))
+            .default_value(std::string("model/IR_int8_640_Pruned/last.xml"))
             .help("model (option)");
 
     YOLO_inference.add_argument("-o", "--out")
